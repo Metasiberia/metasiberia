@@ -288,9 +288,12 @@ void renderSignUpPage(ServerAllWorldsState& world_state, const web::RequestInfo&
 		page_out += "<label for=\"new-password\">password</label><br/>";
 		page_out += "<input id=\"new-password\"	autocomplete=\"new-password\"	required=\"required\"	type=\"password\"	name=\"password\">"; // See https://web.dev/sign-in-form-best-practices/#new-password
 		page_out += "</div>";
+		page_out += "<input type=\"checkbox\" id=\"rules-checkbox\">";
+		page_out += "<label for=\"rules-checkbox\">I have read and accepted the <a href=\"https://metasiberia.com/terms\">rules<a><label/><br/>";
 
-		page_out += "<input type=\"submit\" value=\"Sign Up\">";
+		page_out += "<input type=\"submit\" id=\"submit\" disabled=\"true\" value=\"Sign Up\" />";
 		page_out += "</form>";
+		page_out += "<script>document.getElementById(\"rules-checkbox\").addEventListener(\"change\",function(){document.getElementById(\"submit\").disabled=!this.checked;});</script>";
 	}
 
 	page_out += "<br/><br/><br/>";

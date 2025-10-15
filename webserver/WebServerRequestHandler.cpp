@@ -98,6 +98,18 @@ void WebServerRequestHandler::handleRequest(const web::RequestInfo& request, web
 		{
 			LoginHandlers::handleLoginPost(*this->world_state, request, reply_info);
 		}
+		else if(request.path == "/admin_add_new_parcel_post")
+		{
+			AdminHandlers::handleAdminAddNewParcelPost(*this->world_state, request, reply_info);
+		}
+		else if(request.path == "/admin_edit_parcel_post")
+		{
+			AdminHandlers::handleAdminEditParcelPost(*this->world_state, request, reply_info);
+		}
+		else if(request.path == "/admin_remove_parcel_post")
+		{
+			AdminHandlers::handleAdminRemoveParcelPost(*this->world_state, request, reply_info);
+		}
 		else if(request.path == "/logout_post")
 		{
 			LoginHandlers::handleLogoutPost(request, reply_info);
@@ -324,6 +336,12 @@ void WebServerRequestHandler::handleRequest(const web::RequestInfo& request, web
 		if(request.path == "/")
 		{
 			MainPageHandlers::renderRootPage(*this->world_state, *this->data_store, request, reply_info);
+		}
+		else if(request.path == "/admin_add_new_parcel") {
+			AdminHandlers::renderAdminAddNewParcel(*this->world_state, request, reply_info);
+		}
+		else if(::hasPrefix(request.path, "/admin_edit_parcel/")) {
+			AdminHandlers::renderAdminEditParcel(*this->world_state, request, reply_info);
 		}
 		else if(request.path == "/terms")
 		{
