@@ -10,11 +10,6 @@ Copyright Glare Technologies Limited 2024 -
 #endif
 #include "MainWindow.h"
 #include "ui_MainWindow.h"
-#include <QtCore/QTranslator>
-#include <QtWidgets/QActionGroup>
-#include <QtWidgets/QAction>
-#include <QtWidgets/QMenu>
-#include <QtCore/QFile>
 #include "AboutDialog.h"
 #include "CreateObjectsDialog.h"
 #include "ClientThread.h"
@@ -148,9 +143,6 @@ MainWindow::MainWindow(const std::string& base_dir_path_, const std::string& app
 	ui = new Ui::MainWindow();
 	ui->setupUi(this);
 
-	// Set translatable window title
-	setWindowTitle(tr("Metasiberia"));
-
 	setAcceptDrops(true);
 
 	update_ob_editor_transform_timer = new QTimer(this);
@@ -170,74 +162,6 @@ MainWindow::MainWindow(const std::string& base_dir_path_, const std::string& app
 #endif
 	ui->menuWindow->addAction(ui->diagnosticsDockWidget->toggleViewAction());
 
-	// ---------------- Language submenu ----------------
-	{
-		QMenu* language_menu = new QMenu(tr("Language"), this);
-		language_action_group = new QActionGroup(this);
-		language_action_group->setExclusive(true);
-
-		action_lang_en = language_menu->addAction(tr("English"));
-		action_lang_en->setCheckable(true);
-		action_lang_en->setData(QString("en"));
-		language_action_group->addAction(action_lang_en);
-
-		action_lang_ru = language_menu->addAction(tr("Русский"));
-		action_lang_ru->setCheckable(true);
-		action_lang_ru->setData(QString("ru"));
-		language_action_group->addAction(action_lang_ru);
-
-		ui->menuWindow->addSeparator();
-		ui->menuWindow->addMenu(language_menu);
-
-		// Ensure settings is initialised before we use it
-		if(!settings)
-			settings = new QSettings("Glare Technologies", "Cyberspace");
-
-		connect(language_action_group, &QActionGroup::triggered, this, [this](QAction* a){
-			const QString lang = a->data().toString();
-			// Uninstall previous
-			qApp->removeTranslator(&app_translator);
-			bool installed = false;
-			if(lang == "ru")
-			{
-				// Try to load Russian translation
-				QString qm_path = QString::fromStdString(base_dir_path) + "/data/resources/translations/metasiberia_ru.qm";
-				if(QFile::exists(qm_path))
-				{
-					installed = app_translator.load(qm_path);
-					if(installed)
-						qApp->installTranslator(&app_translator);
-				}
-			}
-			// For English, we just don't install any translator
-			
-			// Save language preference
-			if(settings)
-				settings->setValue("mainwindow/language", lang);
-			
-			// Retranslate UI immediately
-			ui->retranslateUi(this);
-		});
-
-		// Initial language from settings (default en)
-		const QString saved_lang = settings ? settings->value("mainwindow/language", "en").toString() : QString("en");
-		if(saved_lang == "ru")
-		{
-			action_lang_ru->setChecked(true);
-			// Load Russian translation
-			QString qm_path = QString::fromStdString(base_dir_path) + "/data/resources/translations/metasiberia_ru.qm";
-			if(QFile::exists(qm_path))
-			{
-				if(app_translator.load(qm_path))
-					qApp->installTranslator(&app_translator);
-			}
-		}
-		else
-		{
-			action_lang_en->setChecked(true);
-		}
-	}
-
 	settings = new QSettings("Glare Technologies", "Cyberspace");
 
 	credential_manager.loadFromSettings(*settings);
@@ -252,15 +176,12 @@ MainWindow::MainWindow(const std::string& base_dir_path_, const std::string& app
 	// -------------------------------------------------------------
 	// 2.18 ms CPU, 4.53 ms GPU
 	//
-	// Metasiberia: Enable compatibility mode by default
 	ui->glWidget->allow_multi_draw_indirect = false;
-	ui->glWidget->allow_bindless_textures = false;
-	
-	// Allow override via command line if needed
-	if(args.isArgPresent("--enable_MDI"))
-		ui->glWidget->allow_multi_draw_indirect = true;
-	if(args.isArgPresent("--enable_bindless"))
-		ui->glWidget->allow_bindless_textures = true;
+
+	//if(args.isArgPresent("--no_MDI"))
+	//	ui->glWidget->allow_multi_draw_indirect = false;
+	if(args.isArgPresent("--no_bindless"))
+		ui->glWidget->allow_bindless_textures = false;
 
 	ui->glWidget->setBaseDir(base_dir_path, /*print output=*/this, settings);
 	ui->objectEditor->base_dir_path = base_dir_path;
@@ -336,13 +257,6 @@ MainWindow::MainWindow(const std::string& base_dir_path_, const std::string& app
 
 	ui->environmentOptionsWidget->init(settings);
 	connect(ui->environmentOptionsWidget, SIGNAL(settingChanged()), this, SLOT(environmentSettingChangedSlot()));
-	
-	// Initialize northern lights setting
-	if(ui->glWidget->opengl_engine.nonNull() && ui->glWidget->opengl_engine->getCurrentScene())
-	{
-		const bool northern_lights_enabled = ui->environmentOptionsWidget->getNorthernLightsEnabled();
-		ui->glWidget->opengl_engine->getCurrentScene()->draw_aurora = northern_lights_enabled;
-	}
 
 	connect(ui->chatPushButton, SIGNAL(clicked()), this, SLOT(sendChatMessageSlot()));
 	connect(ui->chatMessageLineEdit, SIGNAL(returnPressed()), this, SLOT(sendChatMessageSlot()));
@@ -407,7 +321,7 @@ MainWindow::MainWindow(const std::string& base_dir_path_, const std::string& app
 
 static std::string computeWindowTitle()
 {
-	return "Metasiberia v" + ::cyberspace_version;
+	return "Substrata v" + ::cyberspace_version;
 }
 
 
@@ -3474,17 +3388,7 @@ void MainWindow::environmentSettingChangedSlot()
 		const float phi   = ::degreeToRad((float)ui->environmentOptionsWidget->sunPhiRealControl->value());
 		const Vec4f sundir = GeometrySampling::dirForSphericalCoords(phi, theta);
 
-		ui->glWidget->opengl_engine->setSunDir(sundir);
-		
-		// Update northern lights setting
-		const bool northern_lights_enabled = ui->environmentOptionsWidget->getNorthernLightsEnabled();
-		if(ui->glWidget->opengl_engine->getCurrentScene())
-		{
-			ui->glWidget->opengl_engine->getCurrentScene()->draw_aurora = northern_lights_enabled;
-			// Debug: print the state
-			printf("Northern lights setting changed: %s\n", northern_lights_enabled ? "true" : "false");
-			printf("Scene draw_aurora: %s\n", ui->glWidget->opengl_engine->getCurrentScene()->draw_aurora ? "true" : "false");
-		}
+		opengl_engine->setSunDir(sundir);
 	}
 }
 
@@ -3573,9 +3477,6 @@ void MainWindow::URLChangedSlot()
 {
 	const std::string URL = this->url_widget->getURL();
 	visitSubURL(URL);
-	
-	// Update parcel editor with current server URL for dynamic links
-	ui->parcelEditor->setCurrentServerURL(URL);
 }
 
 
@@ -3756,13 +3657,6 @@ void MainWindow::showParcelEditor()
 void MainWindow::setParcelEditorForParcel(const Parcel& parcel)
 {
 	ui->parcelEditor->setFromParcel(parcel);
-	
-	// Set current server URL for dynamic parcel links
-	if(url_widget)
-	{
-		std::string current_url = url_widget->getURL();
-		ui->parcelEditor->setCurrentServerURL(current_url);
-	}
 }
 
 
@@ -4288,24 +4182,34 @@ float MainWindow::gamepadAxisRightY()
 
 bool MainWindow::supportsSharedGLContexts() const
 {
+#if defined(_WIN32)
 	return true;
+#else
+	return false; // Not implemented yet for Mac and Linux
+#endif
 }
 
 
 void* MainWindow::makeNewSharedGLContext()
 {
+#if defined(_WIN32)
 	return (void*)ui->glWidget->makeNewSharedGLContext();
+#else
+	return nullptr;
+#endif
 }
 
 
 void MainWindow::makeGLContextCurrent(void* context_)
 {
+#if defined(_WIN32)
 	HWND hwnd = reinterpret_cast<HWND>(ui->glWidget->winId());
 	HDC hdc = GetDC(hwnd);
 
 	HGLRC handle = (HGLRC)context_;
 	BOOL res = wglMakeCurrent(hdc, handle);
 	assert(res != 0);
+#endif
 }
 
 
@@ -4463,20 +4367,20 @@ int main(int argc, char *argv[])
 #ifdef BUGSPLAT_SUPPORT
 	if(shouldEnableBugSplat())
 	{
-		// BugSplat initialization - disabled for development build
-		// new MiniDmpSender(
-		//	L"Substrata", // database
-		//	L"Substrata", // app
-		//	StringUtils::UTF8ToPlatformUnicodeEncoding(cyberspace_version).c_str(), // version
-		//	NULL, // app identifier
-		//	MDSF_USEGUARDMEMORY | MDSF_LOGFILE | MDSF_PREVENTHIJACKING // flags
-		// );
+		// BugSplat initialization.
+		new MiniDmpSender(
+			L"Substrata", // database
+			L"Substrata", // app
+			StringUtils::UTF8ToPlatformUnicodeEncoding(cyberspace_version).c_str(), // version
+			NULL, // app identifier
+			MDSF_USEGUARDMEMORY | MDSF_LOGFILE | MDSF_PREVENTHIJACKING // flags
+		);
 
 		// The following calls add support for collecting crashes for abort(), vectored exceptions, out of memory,
 		// pure virtual function calls, and for invalid parameters for OS functions.
 		// These calls should be used for each module that links with a separate copy of the CRT.
-		// SetGlobalCRTExceptionBehavior();
-		// SetPerThreadCRTExceptionBehavior(); // This call needed in each thread of your app
+		SetGlobalCRTExceptionBehavior();
+		SetPerThreadCRTExceptionBehavior(); // This call needed in each thread of your app
 	}
 #endif
 
@@ -4534,10 +4438,8 @@ int main(int argc, char *argv[])
 		syntax["--extractanims"] = std::vector<ArgumentParser::ArgumentType>(2, ArgumentParser::ArgumentType_string); // Extract animation data
 		syntax["--screenshotslave"] = std::vector<ArgumentParser::ArgumentType>(); // Run GUI as a screenshot-taking slave.
 		syntax["--testscreenshot"] = std::vector<ArgumentParser::ArgumentType>(); // Test screenshot taking
-		syntax["--no_MDI"] = std::vector<ArgumentParser::ArgumentType>(); // Disable MDI in graphics engine (legacy)
-		syntax["--no_bindless"] = std::vector<ArgumentParser::ArgumentType>(); // Disable bindless textures in graphics engine (legacy)
-		syntax["--enable_MDI"] = std::vector<ArgumentParser::ArgumentType>(); // Enable MDI in graphics engine (override default)
-		syntax["--enable_bindless"] = std::vector<ArgumentParser::ArgumentType>(); // Enable bindless textures in graphics engine (override default)
+		syntax["--no_MDI"] = std::vector<ArgumentParser::ArgumentType>(); // Disable MDI in graphics engine
+		syntax["--no_bindless"] = std::vector<ArgumentParser::ArgumentType>(); // Disable bindless textures in graphics engine
 
 		if(args.size() == 3 && args[1] == "-NSDocumentRevisionsDebugMode")
 			args.resize(1); // This is some XCode debugging rubbish, remove it
@@ -4568,9 +4470,9 @@ int main(int argc, char *argv[])
 		}
 
 
-	//std::string server_hostname = "substrata.info";
-	//std::string server_userpath = "";
-	std::string server_URL = "sub://vr.metasiberia.com";
+		//std::string server_hostname = "substrata.info";
+		//std::string server_userpath = "";
+		std::string server_URL = "sub://substrata.info";
 		bool server_URL_explicitly_specified = false;
 
 		if(parsed_args.isArgPresent("-h"))

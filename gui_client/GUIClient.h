@@ -93,6 +93,7 @@ class VBOPool;
 class PBOPool;
 class VBO;
 class PBO;
+namespace Scripting { class ObjectScriptsEvaluator; }
 
 
 struct ResourceUserList
@@ -256,7 +257,7 @@ public:
 	void removeParcelObjects();
 	void recolourParcelsForLoggedInState();
 	void updateSelectedObjectPlacementBeamAndGizmos();
-	void updateInstancedCopiesOfObject(WorldObject* ob);
+	//void updateInstancedCopiesOfObject(WorldObject* ob);
 	void removeInstancesOfObject(WorldObject* ob);
 	void removeObScriptingInfo(WorldObject* ob);
 	void bakeLightmapsForAllObjectsInParcel(uint32 lightmap_flag);
@@ -467,9 +468,10 @@ public:
 	std::set<WorldObjectRef> web_view_obs;
 	std::set<WorldObjectRef> browser_vid_player_obs;
 	std::set<WorldObjectRef> audio_obs; // Objects with an audio_source or a non-empty audio_source_url, or objects that may play audio such as web-views or videos.
-	std::set<WorldObjectRef> obs_with_scripts; // Objects with non-null script_evaluator
+	glare::LinearIterSet<WorldObjectRef, WorldObjectRefHash> obs_with_scripts; // Objects with non-null script_evaluator
 	std::set<WorldObjectRef> obs_with_diagnostic_vis;
 
+	Reference<Scripting::ObjectScriptsEvaluator> object_scripts_evaluator;
 
 	WorldDetails connected_world_details;
 	WorldSettings connected_world_settings; // Settings for the world we are connected to, if any.
@@ -529,6 +531,7 @@ public:
 	
 	glare::TaskManager model_and_texture_loader_task_manager;
 
+	// For short, processor-intensive tasks that the main thread depends on, such as computing animation data for the current frame, or executing Jolt physics tasks.
 	glare::TaskManager* high_priority_task_manager;
 
 	MeshManager mesh_manager;
@@ -560,7 +563,7 @@ public:
 
 	// Textures being loaded or already loaded.
 	// We have this set so that we don't process the same texture from multiple LoadTextureTasks running in parallel.
-	std::unordered_set<OpenGLTextureKey> textures_processing;
+	std::unordered_set<OpenGLTextureKey, OpenGLTextureKeyHasher> textures_processing;
 
 	// We build a different physics mesh for dynamic objects, so we need to keep track of which mesh we are building.
 	struct ModelProcessingKey
@@ -595,7 +598,7 @@ public:
 
 	// Audio files being loaded or already loaded.
 	// We have this set so that we don't process the same audio from multiple LoadAudioTasks running in parallel.
-	std::unordered_set<URLString> audio_processing;
+	std::unordered_set<URLString, URLStringHasher> audio_processing;
 
 	std::unordered_set<std::string> script_content_processing;
 
@@ -654,18 +657,18 @@ public:
 
 	js::Vector<Vec4f, 16> temp_av_positions;
 
-	std::unordered_map<URLString, DownloadingResourceInfo> URL_to_downloading_info; // Map from URL to info about the resource, for currently downloading resources.
+	std::unordered_map<URLString, DownloadingResourceInfo, URLStringHasher> URL_to_downloading_info; // Map from URL to info about the resource, for currently downloading resources.
 
 	std::map<ModelProcessingKey, std::set<UID>> loading_model_URL_to_world_ob_UID_map;
-	std::unordered_map<URLString, std::set<UID>> loading_model_URL_to_avatar_UID_map;
+	std::unordered_map<URLString, std::set<UID>, URLStringHasher> loading_model_URL_to_avatar_UID_map;
 
-	std::unordered_map<URLString, std::set<UID>> loading_texture_URL_to_world_ob_UID_map;
-	std::unordered_map<URLString, std::set<UID>> loading_texture_URL_to_avatar_UID_map;
+	std::unordered_map<URLString, std::set<UID>, URLStringHasher> loading_texture_URL_to_world_ob_UID_map;
+	std::unordered_map<URLString, std::set<UID>, URLStringHasher> loading_texture_URL_to_avatar_UID_map;
 
-	std::unordered_map<OpenGLTextureKey, std::set<UID>> loading_texture_key_to_hypercard_UID_map;
+	std::unordered_map<OpenGLTextureKey, std::set<UID>, URLStringHasher> loading_texture_key_to_hypercard_UID_map;
 
-	std::unordered_map<URLString, Vec3i> loading_mesh_URL_to_chunk_coords_map;
-	std::unordered_map<URLString, Vec3i> loading_texture_URL_to_chunk_coords_map;
+	std::unordered_map<URLString, Vec3i, URLStringHasher> loading_mesh_URL_to_chunk_coords_map;
+	std::unordered_map<URLString, Vec3i, URLStringHasher> loading_texture_URL_to_chunk_coords_map;
 
 	std::vector<Reference<GLObject> > player_phys_debug_spheres;
 
