@@ -309,24 +309,24 @@ void handleAdminEditParcelPost(ServerAllWorldsState& world_state, const web::Req
 				Parcel *parcel = res->second.ptr();
 
 				// check parcel intersection
-				const Rect2d bounds(botleft, topright);
+				// const Rect2d bounds(botleft, topright);
 
-				for(auto it = world_state.getRootWorldState()->parcels.begin(); it != world_state.getRootWorldState()->parcels.end(); ++it)
-				{
-					if (it == res) {
-						continue;
-					}
-
-					const Parcel* p = it->second.ptr();
-
-					const Rect2d other_bounds(Vec2d(p->aabb_min.x, p->aabb_min.y), Vec2d(p->aabb_max.x, p->aabb_max.y));
-
-					if(bounds.intersectsRect2(other_bounds))
-					{
-						valid_parcel = false;
-						break;
-					}
-				}
+				// for(auto it = world_state.getRootWorldState()->parcels.begin(); it != world_state.getRootWorldState()->parcels.end(); ++it)
+				// {
+				// 	if (it == res) {
+				// 		continue;
+				// 	}
+				// 
+				// 	const Parcel* p = it->second.ptr();
+				// 
+				// 	const Rect2d other_bounds(Vec2d(p->aabb_min.x, p->aabb_min.y), Vec2d(p->aabb_max.x, p->aabb_max.y));
+				// 
+				// 	if(bounds.intersectsRect2(other_bounds))
+				// 	{
+				// 		valid_parcel = false;
+				// 		break;
+				// 	}
+				// }
 
 				// create parcel
 
