@@ -46,7 +46,7 @@ const std::string standardHTMLHeader(WebDataStore& data_store, const web::Reques
 		"	<!DOCTYPE html>																									\n"
 		"	<html>																											\n"
 		"		<head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">		\n"
-		"		<meta http-equiv=\"Content-Security-Policy\" content=\"frame-src youtube.com www.youtube.com player.vimeo.com vimeocdn.com; img-src 'self' i.ytimg.com i.vimeocdn.com; script-src 'sha256-9pjOKEeTuYR28CuPd1leIgLV8LIXR7A7CXnJacXwlYg='; default-src 'self';\" />	\n"
+		"		<meta http-equiv=\"Content-Security-Policy\" content=\"frame-src youtube.com www.youtube.com player.vimeo.com vimeocdn.com; img-src 'self' i.ytimg.com i.vimeocdn.com; default-src 'self' 'unsafe-inline';\" />	\n"
 		"		<title>" + web::Escaping::HTMLEscape(page_title) + "</title>												\n"
 		"		<link href=\"/files/main.css?hash=" + data_store.main_css_hash + "\" rel=\"stylesheet\" />														\n"
 		"		<link rel=\"icon\" type=\"image/png\" href=\"/files/favicon.png\">											\n"
